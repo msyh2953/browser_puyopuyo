@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ja">
-     <!-- Source: https://github.com/msyh2953/browser_puyopuyo -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,6 +45,7 @@
         const colors = ["red", "blue", "green", "yellow"];
         const gameContainer = document.getElementById("game-container");
         let board = Array.from({ length: rows }, () => Array(cols).fill(null));
+        let activePuyo = null;
 
         function createCell(row, col) {
             const cell = document.createElement("div");
@@ -70,15 +70,29 @@
             }
         }
 
-        function dropPuyo() {
+        function spawnPuyo() {
             const col = Math.floor(Math.random() * cols);
             const color = colors[Math.floor(Math.random() * colors.length)];
-            for (let row = rows - 1; row >= 0; row--) {
-                if (!board[row][col]) {
-                    board[row][col] = color;
-                    break;
-                }
+            activePuyo = { row: 0, col, color };
+        }
+
+        function movePuyoDown() {
+            if (!activePuyo) return false;
+
+            const { row, col, color } = activePuyo;
+            const nextRow = row + 1;
+
+            // 次の行が範囲内で空いているかを確認
+            if (nextRow < rows && !board[nextRow][col]) {
+                activePuyo.row = nextRow;
+            } else {
+                // 移動できない場合、固定
+                board[row][col] = color;
+                activePuyo = null;
+                return false;
             }
+
+            return true;
         }
 
         function clearMatches() {
@@ -137,17 +151,15 @@
         }
 
         function gameLoop() {
-            dropPuyo();
-            renderBoard();
-            if (clearMatches()) {
-                setTimeout(() => {
+            if (!activePuyo) {
+                spawnPuyo();
+            } else if (!movePuyoDown()) {
+                if (clearMatches()) {
                     applyGravity();
-                    renderBoard();
-                    setTimeout(gameLoop, 500);
-                }, 500);
-            } else {
-                setTimeout(gameLoop, 1000);
+                }
             }
+            renderBoard();
+            setTimeout(gameLoop, 500);
         }
 
         renderBoard();
